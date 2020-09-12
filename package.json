@@ -4,12 +4,29 @@
   "description": "A PWA weather app",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "grunt",
+    "serve": "firebase serve",
+    "deploy": "firebase deploy",
+    "predeploy": "npm run build"
   },
   "keywords": [
     "weather",
     "pwa"
   ],
   "author": "David Okanlawon",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {
+    "grunt": "^1.3.0",
+    "grunt-cli": "^1.3.2",
+    "grunt-contrib-copy": "^1.0.0",
+    "grunt-contrib-cssmin": "^3.0.0",
+    "grunt-inline": "^0.3.7",
+    "grunt-processhtml": "^0.4.2",
+    "grunt-purgecss": "^2.3.0",
+    "grunt-terser": "^1.0.0",
+    "grunt-uncss": "^0.9.1",
+    "matchdep": "^2.0.0"
+  }
 }
