@@ -12,7 +12,44 @@
   <title>Weather App</title>
 </head>
 <body>
-  <h2 id="header">Header goes here</h2>
+  <div class="container">
+    <!-- Main Header -->
+    <header id="page-header">
+      <h1>Weather Forecast App</h1>
+    </header>
+    <!--End Main Header-->
+
+    <!-- Search Bar -->
+    <div id="search-bar">    
+      <div id="search-input-container" class="search-bar-item">
+        <input id="search-input" type="text" placeholder="Enter city ...">
+      </div>
+      <div class="search-bar-item">
+        <button id="btn-get-forecast">Get Forecast</button>
+      </div>      
+    </div>
+    <!-- End Search Bar -->
+
+    <!-- Current Weather -->
+    <div id="current-weather">
+      Current Weather
+    </div>
+    <!-- End Current Weather-->
+
+    <!-- 6-Day Forecast -->
+    <div id="forecast-days">
+      Forecast Days
+    </div>
+    <!-- End 6-Day Forecast -->
+
+    <!-- Footer -->
+    <footer id="page-footer">
+      Footer
+    </footer>
+    <!-- End Footer -->
+
+  </div>
+  <!-- End Container-->
 </body>
 <!-- build:[src] ./ -->
 <script src="./js/index.js" async></script>
