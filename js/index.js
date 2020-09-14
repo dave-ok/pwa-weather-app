@@ -55,6 +55,7 @@ const formatDate = (date) => {
     concat: msDate.getFullYear().toString() + msDate.toLocaleString([], monthOptions) + msDate.toLocaleString([], dayOfMonthOptions),
     longDay: msDate.toLocaleString([], weekDayOptions),
     shortDay: msDate.toLocaleString([], shortWeekDayOptions),
+    time: msDate.toLocaleTimeString(),
     unix: date
   }
 }
@@ -315,7 +316,7 @@ const displayForecast = (records) => {
   
 }
 
-// button click handler
+// button click handlers
 const btnSearch = document.querySelector("#btn-get-forecast");
 const inputSearch = document.querySelector("#search-input");
 const btnLocalSearch = document.querySelector("#btn-local-forecast");
@@ -324,7 +325,10 @@ btnSearch.addEventListener("click", async () => {
   const result = await fetchLiveForecast(inputSearch.value);
 
   if (result.status === "success") {
-    console.log(extractWeatherInfo(result.data));
+    const data = extractWeatherInfo(result.data);
+    console.log(data);
+    displayCurrentWeather(data.current, data.city);
+    displayForecast(data.forecast);
   }
   else if (result.status === "error") {
     console.log(result.error);
