@@ -9,7 +9,7 @@
     "serve": "npm run build && firebase serve",
     "deploy": "firebase deploy",
     "predeploy": "npm run build",
-    "dev": "npx http-server -a 127.0.0.1 -p 5050"
+    "dev": "npx http-server -a 127.0.0.1 -p 5050 --cors"
   },
   "keywords": [
     "weather",
@@ -28,6 +28,7 @@
     "grunt-purgecss": "^2.3.0",
     "grunt-terser": "^1.0.0",
     "grunt-uncss": "^0.9.1",
+    "http-server": "^0.12.3",
     "matchdep": "^2.0.0"
   }
 }

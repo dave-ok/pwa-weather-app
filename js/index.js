@@ -1,10 +1,12 @@
 // TODO: transfer to firebase functions
 const API_KEY = "f3893cd33d19506354f252a28d96885c";
 
-const decodeResponse = async (response) => {
+// decode response
+const decodeResponse = async (response, city) => {
   switch (response.status) {
     case 200: {
       const data = await response.json();
+      city ? data.city = city : undefined; // if city name was passed in attach to response
       return {
         status: "success",
         data
@@ -36,8 +38,55 @@ const decodeResponse = async (response) => {
   }
 }
 
+// format our date to different formats for ease of use
+const formatDate = (date) => {
+  const fullDateOptions = { weekday: "long", year: "numeric", month: "long", day: "numeric" };
+  const shortDateOptions = { day: "2-digit", month: "2-digit"};
+  const monthOptions = { month: "2-digit"}
+  const dayOfMonthOptions = { day: "2-digit"};
+  const weekDayOptions = { weekday: "long" };
+  const shortWeekDayOptions = { weekday: "short" };
+
+  const msDate = new Date(date * 1000);
+
+  return {
+    full: msDate.toLocaleString([], fullDateOptions),
+    short: msDate.toLocaleString([], shortDateOptions),
+    concat: msDate.getFullYear().toString() + msDate.toLocaleString([], monthOptions) + msDate.toLocaleString([], dayOfMonthOptions),
+    longDay: msDate.toLocaleString([], weekDayOptions),
+    shortDay: msDate.toLocaleString([], shortWeekDayOptions),
+    unix: date
+  }
+}
+
+// extract info we need from weather data
+const extractWeatherInfo = (data) => {  
+
+  // utility function to extract info from each weather data object
+  const extractSingleInfo = (info) => {
+    return {
+      temp: info.temp,
+      main: info.weather[0].main,
+      description: info.weather[0].description,
+      date: formatDate(info.dt)
+    }    
+  }
+
+  const current = extractSingleInfo(data.current);
+  const forecast = data.daily.map((info) => {
+    return extractSingleInfo(info);
+  });
+
+  // return current data and forecast as objects
+  return {
+    current,
+    forecast,
+    city: data.city
+  };
+}
+
 // get coordinates using city from current weather
-const fetchCurrentWeather = async (city) => {
+const fetchCurrentWeather = async (location) => {
   try {
     //base url
     const baseUrl = "https://api.openweathermap.org/data/2.5/weather";
@@ -46,7 +95,14 @@ const fetchCurrentWeather = async (city) => {
     const params = {
       appid: API_KEY,
       units: "metric",
-      q: city
+    }
+
+    if (typeof location === "string") {
+      params.q = location;
+    }
+    else {
+      params.lat = location.lat;
+      params.lon = location.lon;
     }
 
     const url = new URL(baseUrl);  
@@ -81,14 +137,29 @@ const fetchLiveForecast = async (location = 'New York', mode = "city") => {
       exclude: "minutely,hourly"
     }
 
+    // placeholder for city name
+    let city;
+
     const url = new URL(baseUrl);
 
     if (mode === "coord") {
       params.lat = location.lat;
       params.lon = location.lon;
+
+      const cityData = await fetchCurrentWeather(location);
+
+      // if an error occured getting city rethrow the error
+      if (cityData.error) {
+        throw new Error(cityData.error);
+      }
+
+      //assign city name here
+      city = cityData.data.name;
     }
     // if not coordinates then must be city
     else {
+      city = location; // assign location to city var
+
       const cityData = await fetchCurrentWeather(location);
 
       // if an error occured getting city rethrow the error
@@ -104,7 +175,7 @@ const fetchLiveForecast = async (location = 'New York', mode = "city") => {
     url.search = new URLSearchParams(params);
 
     const response = await fetch(url);    
-    return decodeResponse(response);
+    return decodeResponse(response, city);
   }
   catch (error) {
     return {
@@ -115,25 +186,162 @@ const fetchLiveForecast = async (location = 'New York', mode = "city") => {
   }
 }
 
+// promisify geolocation API callbacks
+const getLocationPromise = () => {
+  const options = {
+    enableHighAccuracy: true,
+    timeout: 10 * 1000,
+    maximumAge: 0
+  };
+
+  return new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        resolve(position.coords);
+      },
+      (positionError) => {
+        reject(positionError);
+      },
+      options
+    )
+  });
+}
 
 //request location permission
+const getLocationWithPermission = async () => {
+  // when not supported
+  if(!navigator.geolocation) {
+    return {
+      error: "unsupported"
+    };
+  } 
 
+  // experimental :) PERMISSIONS API
+  // check if permissions have already been granted
+  if (navigator.permissions) {
+    const permission = await navigator.permissions.query({
+      name: "geolocation"
+    });    
 
-//cache search result
+    // user has denied access don't bother
+    if (permission.state === "denied") {
+      return {
+        error: "denied"
+      };
+    }
 
+    // prompt user here
+    else if (permission.state === "prompt") {
+      //use our dialog to notify of upcoming request
+      const allowLocation = confirm("We need permission to access your location for local weather");
+      if(!allowLocation) {
+        return {
+          error: "denied"
+        };
+      }
+    }
+  }
+
+  // request location
+  try {
+    const position = await getLocationPromise();
+    return {
+      lon: position.longitude,
+      lat: position.latitude
+    }
+
+  } catch (error) {
+    return {
+      error: error.message
+    };    
+  }
+
+}
+
+// cache search result
+
+// temp ul render
+const createUl = (obj) => {
+  const ulElem = document.createElement("ul");
+  for (const key in obj) {
+    if (!obj.hasOwnProperty(key)) continue;
+    const liElem = document.createElement("li");
+    if (typeof obj[key] === "object") {
+      liElem.textContent = key;
+      liElem.appendChild(createUl(obj[key]));
+    }
+    else {
+      liElem.textContent = obj[key];
+    }
+    ulElem.appendChild(liElem);
+  }
+  return ulElem;
+}
+
+// display current weather
+const displayCurrentWeather = (data, city) => {
+  // just show it for now
+  const container = document.querySelector("#current-weather");
+  const elem = createUl(data);
+
+  while (container.firstChild) {
+    container.removeChild(container.firstChild);
+  }
+
+  const div = document.createElement("div");
+  div.textContent = city;
+  div.className = "current-city";
+
+  container.appendChild(div);
+  container.appendChild(elem);
+}
+
+// display forecast
+const displayForecast = (records) => {
+  // just show it for now
+  const container = document.querySelector("#forecast-days");
+  while (container.firstChild) {
+    container.removeChild(container.firstChild);
+  }
+
+  // create div and attach ul
+  records.forEach((record) => {
+    const div = document.createElement("div");
+    div.className = "forecast-day";
+    const elem = createUl(record);
+    div.appendChild(elem);
+    container.appendChild(div);
+  });
+  
+}
 
 // button click handler
 const btnSearch = document.querySelector("#btn-get-forecast");
 const inputSearch = document.querySelector("#search-input");
+const btnLocalSearch = document.querySelector("#btn-local-forecast");
 
 btnSearch.addEventListener("click", async () => {
-  console.log(inputSearch.value);
   const result = await fetchLiveForecast(inputSearch.value);
 
   if (result.status === "success") {
-    console.log(result.data);
+    console.log(extractWeatherInfo(result.data));
   }
   else if (result.status === "error") {
     console.log(result.error);
   }
-})
+});
+
+btnLocalSearch.addEventListener("click", async () => {
+  const coords = await getLocationWithPermission();
+  const result = await fetchLiveForecast(coords, mode = "coord");
+
+  if (result.status === "success") {
+    const data = extractWeatherInfo(result.data);
+    console.log(data);
+    displayCurrentWeather(data.current, data.city);
+    displayForecast(data.forecast);
+  }
+  else if (result.status === "error") {
+    console.log(result.error);
+  }
+});
