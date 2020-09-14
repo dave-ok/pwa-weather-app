@@ -19,7 +19,8 @@ module.exports = function (grunt) {
     uncss: {
       build: {
         options: {
-          report: 'min'
+          report: 'min',
+          ignore: ['.forecast-day', '.current-city']
         },
         files: {
           'build/styles.css': ['./index.html']
