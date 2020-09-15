@@ -381,7 +381,7 @@ btnSearch.addEventListener("click", async () => {
 
 btnLocalSearch.addEventListener("click", async () => {
   // get last local search from cache
-  const lastLocalSearch = localStorage.get("lastLocalSearch");
+  const lastLocalSearch = localStorage.getItem("lastLocalSearch");
   if (lastLocalSearch) {
     //check cache first before going online
     const cacheResult = getCacheData(lastLocalSearch);
