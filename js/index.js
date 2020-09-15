@@ -260,6 +260,28 @@ const getLocationWithPermission = async () => {
 }
 
 // cache search result
+const setCacheData = (data) => {
+  const key = data.city.toLowerCase();  
+
+  //stringify and store in localStorage with city as key
+  localStorage.setItem(key, JSON.stringify(data));
+}
+
+// retrieve cached data
+const getCacheData = (city) => {
+  // convert to lowercase
+  const key = city.toLowerCase();
+
+  //get content in localStorage for given city
+  const cachedData = localStorage.getItem(key);
+  if (!cachedData) {
+    return false;
+  }
+
+  // convert to object and return
+  const cachedObject = JSON.parse(cachedData);
+  return cachedObject;
+}
 
 // temp ul render
 const createUl = (obj) => {
@@ -322,11 +344,30 @@ const inputSearch = document.querySelector("#search-input");
 const btnLocalSearch = document.querySelector("#btn-local-forecast");
 
 btnSearch.addEventListener("click", async () => {
+  if(!inputSearch.value) {
+    return;
+  }
+
+  const searchCity = inputSearch.value;
+
+  //check cache first before going online
+  const cacheResult = getCacheData(searchCity);
+
+  // if in cache then display it first
+  if (cacheResult) {
+    displayCurrentWeather(cacheResult.current, cacheResult.city);
+    displayForecast(cacheResult.forecast);
+  }
+
+  // get live result online
   const result = await fetchLiveForecast(inputSearch.value);
 
   if (result.status === "success") {
     const data = extractWeatherInfo(result.data);
-    console.log(data);
+    
+    // store result in cache
+    setCacheData(data);
+
     displayCurrentWeather(data.current, data.city);
     displayForecast(data.forecast);
   }
@@ -341,7 +382,10 @@ btnLocalSearch.addEventListener("click", async () => {
 
   if (result.status === "success") {
     const data = extractWeatherInfo(result.data);
-    console.log(data);
+
+    // store result in cache
+    setCacheData(data);
+
     displayCurrentWeather(data.current, data.city);
     displayForecast(data.forecast);
   }
