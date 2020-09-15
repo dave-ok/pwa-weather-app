@@ -6,7 +6,10 @@ const decodeResponse = async (response, city) => {
   switch (response.status) {
     case 200: {
       const data = await response.json();
-      city ? data.city = city : undefined; // if city name was passed in attach to response
+      if (city) {
+        data.city = city;
+        localStorage.setItem("lastSearch", city);
+      }
       return {
         status: "success",
         data
@@ -377,6 +380,20 @@ btnSearch.addEventListener("click", async () => {
 });
 
 btnLocalSearch.addEventListener("click", async () => {
+  // get last local search from cache
+  const lastLocalSearch = localStorage.get("lastLocalSearch");
+  if (lastLocalSearch) {
+    //check cache first before going online
+    const cacheResult = getCacheData(lastLocalSearch);
+
+    // if in cache then display it first
+    if (cacheResult) {
+      displayCurrentWeather(cacheResult.current, cacheResult.city);
+      displayForecast(cacheResult.forecast);
+    }
+
+  }
+
   const coords = await getLocationWithPermission();
   const result = await fetchLiveForecast(coords, mode = "coord");
 
@@ -385,6 +402,10 @@ btnLocalSearch.addEventListener("click", async () => {
 
     // store result in cache
     setCacheData(data);
+
+    // store last home location
+    localStorage.setItem("lastLocalSearch", data.city);
+
 
     displayCurrentWeather(data.current, data.city);
     displayForecast(data.forecast);
